@@ -6,14 +6,6 @@ namespace SpawnCycleFixes
 {
     public static class Utilities
     {
-        // Experimentation, Assurance, Vow, Gordion, March, Adamance, Rend, Dine, Offense, Titan, Artifice, Liquidation, Embrion
-        internal const int NUM_LEVELS = 13;
-
-        internal static bool IsVanillaLevel()
-        {
-            return StartOfRound.Instance.currentLevelID < NUM_LEVELS;
-        }
-
         public static void SpawnProbabilitiesPostProcess(ref List<int> spawnProbabilities, List<SpawnableEnemyWithRarity> enemies)
         {
             if (spawnProbabilities.Count != enemies.Count)
@@ -33,15 +25,6 @@ namespace SpawnCycleFixes
                     }
                     else
                         Plugin.Logger.LogDebug($"Enemy \"{enemyType.enemyName}\" ignored, as natural spawns are still not finished");
-                }
-                // prevents spawn weight from exceeding "maximum"
-                else if (spawnProbabilities[i] > 100 && (Plugin.configLimitSpawnChance.Value == MoonFilter.Always || (Plugin.configLimitSpawnChance.Value == MoonFilter.VanillaMoonsOnly && IsVanillaLevel())))
-                {
-                    Plugin.Logger.LogDebug($"Enemy \"{enemyType.enemyName}\" is exceeding maximum spawn weight ({spawnProbabilities[i]} > 100)");
-                    if (enemies[i].rarity <= 100)
-                        spawnProbabilities[i] = 100;
-                    else // special case for Cadavers on Adamance...
-                        Plugin.Logger.LogDebug($"Enemy \"{enemyType.enemyName}\" ignored; base weight of {enemies[i].rarity}");
                 }
             }
         }

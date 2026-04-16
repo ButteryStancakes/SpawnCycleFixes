@@ -74,7 +74,22 @@ namespace SpawnCycleFixes
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> RoundManager_Trans_AssignRandomEnemyToVent(IEnumerable<CodeInstruction> instructions)
         {
-            return TransCurrentHour(TransSpawnRandomEnemy(instructions.ToList(), nameof(RoundManager.firstTimeSpawningEnemies), nameof(SelectableLevel.Enemies), "Spawner").ToList(), "Spawner");
+            List<CodeInstruction> codes = TransCurrentHour(instructions.ToList(), "Spawner").ToList();
+
+            FieldInfo enemyRushIndex = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.enemyRushIndex));
+            for (int i = 0; i < codes.Count - 9; i++)
+            {
+                if (codes[i].opcode == OpCodes.Ldfld && codes[i].operand as FieldInfo == enemyRushIndex && codes[i + 1].opcode == OpCodes.Ldc_I4_M1 && codes[i + 2].opcode == OpCodes.Bne_Un && codes[i + 9].opcode == OpCodes.Ldc_R4 && (float)codes[i + 9].operand == 0.075f)
+                {
+                    codes[i + 2].opcode = OpCodes.Beq;
+                    Plugin.Logger.LogDebug($"Transpiler (Spawner): Invert infestation multiplier");
+                    return codes;
+                }
+            }
+
+            Plugin.Logger.LogError($"Spawner transpiler failed");
+            return codes;
+            //return TransCurrentHour(TransSpawnRandomEnemy(instructions.ToList(), nameof(RoundManager.firstTimeSpawningEnemies), nameof(SelectableLevel.Enemies), "Spawner").ToList(), "Spawner");
         }
 
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.SpawnRandomOutsideEnemy))]
@@ -84,12 +99,12 @@ namespace SpawnCycleFixes
             return TransSpawnRandomEnemy(instructions.ToList(), nameof(RoundManager.firstTimeSpawningOutsideEnemies), nameof(SelectableLevel.OutsideEnemies), "Outside spawner");
         }
 
-        [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.SpawnRandomDaytimeEnemy))]
+        /*[HarmonyPatch(typeof(RoundManager), nameof(RoundManager.SpawnRandomDaytimeEnemy))]
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> RoundManager_Trans_SpawnRandomDaytimeEnemy(IEnumerable<CodeInstruction> instructions)
         {
             return TransSpawnRandomEnemy(instructions.ToList(), nameof(RoundManager.firstTimeSpawningDaytimeEnemies), nameof(SelectableLevel.DaytimeEnemies), "Daytime spawner");
-        }
+        }*/
 
         [HarmonyPatch(typeof(EnemyAI), nameof(EnemyAI.SubtractFromPowerLevel))]
         [HarmonyPrefix]
@@ -401,14 +416,6 @@ namespace SpawnCycleFixes
                                     spawnProbability = (int)(__instance.currentLevel.OutsideEnemies[k].rarity * enemyType.probabilityCurve.Evaluate(normalizedHour) * enemyType.numberSpawnedFalloff.Evaluate(enemyType.numberSpawned / 10f));
                                 else
                                     spawnProbability = (int)(__instance.currentLevel.OutsideEnemies[k].rarity * enemyType.probabilityCurve.Evaluate(normalizedHour));
-
-                                // NEW: cap at 100 weight
-                                if (spawnProbability > 100 && (Plugin.configLimitSpawnChance.Value == MoonFilter.Always || (Plugin.configLimitSpawnChance.Value == MoonFilter.VanillaMoonsOnly && Utilities.IsVanillaLevel())))
-                                {
-                                    Plugin.Logger.LogDebug($"Predictor: \"{enemyType.name}\" exceeding 100 weight ({spawnProbability})");
-                                    if (__instance.currentLevel.OutsideEnemies[k].rarity <= 100)
-                                        spawnProbability = 100;
-                                }
                             }
 
                             __instance.SpawnProbabilities.Add(spawnProbability);

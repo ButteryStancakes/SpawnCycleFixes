@@ -6,24 +6,16 @@ using HarmonyLib;
 
 namespace SpawnCycleFixes
 {
-    internal enum MoonFilter
-    {
-        Off,
-        VanillaMoonsOnly,
-        Always
-    }
-
     [BepInPlugin(PLUGIN_GUID, PLUGIN_NAME, PLUGIN_VERSION)]
     [BepInDependency(GUID_LOBBY_COMPATIBILITY, BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
     {
-        internal const string PLUGIN_GUID = "butterystancakes.lethalcompany.spawncyclefixes", PLUGIN_NAME = "Spawn Cycle Fixes", PLUGIN_VERSION = "1.1.0";
+        internal const string PLUGIN_GUID = "butterystancakes.lethalcompany.spawncyclefixes", PLUGIN_NAME = "Spawn Cycle Fixes", PLUGIN_VERSION = "1.1.1";
         internal static new ManualLogSource Logger;
 
         const string GUID_LOBBY_COMPATIBILITY = "BMX.LobbyCompatibility";
 
         internal static ConfigEntry<bool> configConsistentSpawnTimes, configLimitOldBirds, configMaskHornetsPower/*, configUpdateFormulas*/;
-        internal static ConfigEntry<MoonFilter> configLimitSpawnChance;
 
         void Awake()
         {
@@ -40,12 +32,6 @@ namespace SpawnCycleFixes
                 "Consistent Spawn Times",
                 true,
                 "(REQUIRES RESTART) Fixes two spawn waves occurring at the start of each day, and also fixes vent timers overlapping future spawn waves which delays them until later in the day.\nWith this setting enabled, spawn waves will always occur at 7:39 AM, 9:00 AM, 11:00 AM, 1:00 PM, 3:00 PM, 5:00 PM, 7:00 PM, 9:00 PM, and 11:00 PM.");
-
-            configLimitSpawnChance = Config.Bind(
-                "Miscellaneous",
-                "Limit Spawn Chance",
-                MoonFilter.VanillaMoonsOnly,
-                "Prevents enemy spawn weight from exceeding 100 (the intended maximum) if its spawn curves would normally allow it to do so.\nThis will prevent some enemy types (ex: baboon hawks on Adamance, nutcrackers on Rend) from spawning out of control on certain maps.");
 
             /*configUpdateFormulas = Config.Bind(
                 "Miscellaneous",
@@ -64,6 +50,10 @@ namespace SpawnCycleFixes
                 "Mask Hornets Power",
                 false,
                 "Mask hornets do not add power level since they spawn in a non-standard way, from killing butlers. Enabling this will fix that.\nIn vanilla, mask hornets and butlers have the same power level (of 2), so enabling this will prevent enemies from spawning to replace dead butlers.");
+
+            Config.Bind("Miscellaneous", "Limit Spawn Chance", string.Empty, "Legacy setting, doesn't work");
+            Config.Remove(Config["Miscellaneous", "Limit Spawn Chance"].Definition);
+            Config.Save();
 
             new Harmony(PLUGIN_GUID).PatchAll();
 
