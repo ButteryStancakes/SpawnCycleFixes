@@ -74,22 +74,7 @@ namespace SpawnCycleFixes
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> RoundManager_Trans_AssignRandomEnemyToVent(IEnumerable<CodeInstruction> instructions)
         {
-            List<CodeInstruction> codes = TransCurrentHour(instructions.ToList(), "Spawner").ToList();
-
-            FieldInfo enemyRushIndex = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.enemyRushIndex));
-            for (int i = 0; i < codes.Count - 9; i++)
-            {
-                if (codes[i].opcode == OpCodes.Ldfld && codes[i].operand as FieldInfo == enemyRushIndex && codes[i + 1].opcode == OpCodes.Ldc_I4_M1 && codes[i + 2].opcode == OpCodes.Bne_Un && codes[i + 9].opcode == OpCodes.Ldc_R4 && (float)codes[i + 9].operand == 0.075f)
-                {
-                    codes[i + 2].opcode = OpCodes.Beq;
-                    Plugin.Logger.LogDebug($"Transpiler (Spawner): Invert infestation multiplier");
-                    return codes;
-                }
-            }
-
-            Plugin.Logger.LogError($"Spawner transpiler failed");
-            return codes;
-            //return TransCurrentHour(TransSpawnRandomEnemy(instructions.ToList(), nameof(RoundManager.firstTimeSpawningEnemies), nameof(SelectableLevel.Enemies), "Spawner").ToList(), "Spawner");
+            return TransCurrentHour(/*TransSpawnRandomEnemy(*/instructions.ToList(), /*nameof(RoundManager.firstTimeSpawningEnemies), nameof(SelectableLevel.Enemies), "Spawner").ToList(),*/ "Spawner");
         }
 
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.SpawnRandomOutsideEnemy))]
@@ -471,20 +456,6 @@ namespace SpawnCycleFixes
             return false;
         }
 
-        [HarmonyPatch(typeof(EnemyAI), nameof(EnemyAI.SubtractFromPowerLevel))]
-        [HarmonyPrefix]
-        public static bool EnemyAI_Pre_SubtractFromPowerLevel(EnemyAI __instance)
-        {
-            if (!__instance.removedPowerLevel && __instance.enemyType.spawnFromWeeds)
-            {
-                __instance.removedPowerLevel = true;
-                RoundManager.Instance.currentWeedEnemyPower -= __instance.enemyType.PowerLevel;
-                return false;
-            }
-
-            return true;
-        }
-
         static IEnumerable<CodeInstruction> TransCurrentHour(List<CodeInstruction> codes, string id)
         {
             if (!Plugin.configConsistentSpawnTimes.Value)
@@ -547,7 +518,7 @@ namespace SpawnCycleFixes
             if (__instance.playersManager.isChallengeFile)
                 amount += 1f;
 
-            int enemiesToSpawn = Mathf.RoundToInt(Mathf.Clamp(Mathf.Lerp(amount + (Mathf.Abs(__instance.timeScript.daysUntilDeadline = 3) / 1.6f) - 3f, amount + 3f, (float)__instance.OutsideEnemySpawnRandom.NextDouble()), __instance.minOutsideEnemiesToSpawn, 20f));
+            int enemiesToSpawn = Mathf.RoundToInt(Mathf.Clamp(Mathf.Lerp(amount + (Mathf.Abs(__instance.timeScript.daysUntilDeadline - 3) / 1.6f) - 3f, amount + 3f, (float)__instance.OutsideEnemySpawnRandom.NextDouble()), __instance.minOutsideEnemiesToSpawn, 20f));
 
             int enemiesSpawned = 0;
             while (enemiesSpawned < enemiesToSpawn && __instance.SpawnRandomOutsideEnemy(timeUpToCurrentHour))

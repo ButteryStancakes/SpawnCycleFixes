@@ -10,7 +10,7 @@ namespace SpawnCycleFixes
     [BepInDependency(GUID_LOBBY_COMPATIBILITY, BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
     {
-        internal const string PLUGIN_GUID = "butterystancakes.lethalcompany.spawncyclefixes", PLUGIN_NAME = "Spawn Cycle Fixes", PLUGIN_VERSION = "1.1.1";
+        internal const string PLUGIN_GUID = "butterystancakes.lethalcompany.spawncyclefixes", PLUGIN_NAME = "Spawn Cycle Fixes", PLUGIN_VERSION = "1.1.2";
         internal static new ManualLogSource Logger;
 
         const string GUID_LOBBY_COMPATIBILITY = "BMX.LobbyCompatibility";
