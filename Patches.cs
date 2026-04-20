@@ -229,12 +229,13 @@ namespace SpawnCycleFixes
                 Plugin.Logger.LogDebug("Enemy successfully reassigned to another empty vent");
             }
 
-            if (Plugin.configConsistentSpawnTimes.Value)
+            // no longer necessary, because of TransCurrentHour
+            /*if (Plugin.configConsistentSpawnTimes.Value)
             {
                 float origTime = spawnTime;
                 spawnTime = Mathf.Clamp(spawnTime - __instance.timeScript.lengthOfHours, (__instance.timeScript.lengthOfHours * __instance.timeScript.hour) + 10f, __instance.timeScript.lengthOfHours * (__instance.currentHour + 1));
                 Plugin.Logger.LogDebug($"Vent spawn time adjusted: {origTime} -> {spawnTime}");
-            }
+            }*/
 
             return true;
         }
