@@ -168,6 +168,7 @@ namespace SpawnCycleFixes
 
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.BeginEnemySpawning))]
         [HarmonyPrefix]
+        [HarmonyWrapSafe]
         static void RoundManager_Pre_BeginEnemySpawning(RoundManager __instance)
         {
             if (Plugin.configConsistentSpawnTimes.Value && __instance.IsServer && __instance.allEnemyVents.Length != 0 && __instance.currentLevel.maxEnemyPowerCount > 0)
