@@ -11,11 +11,11 @@ namespace SpawnCycleFixes
     [HarmonyPatch]
     static class Patches
     {
-        static readonly FieldInfo SPAWN_PROBABILITIES = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.SpawnProbabilities));
-        static readonly FieldInfo CURRENT_LEVEL = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.currentLevel));
-        static readonly FieldInfo CURRENT_HOUR = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.currentHour));
-        static readonly FieldInfo TIME_SCRIPT = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.timeScript));
-        static readonly FieldInfo HOUR = AccessTools.Field(typeof(TimeOfDay), nameof(TimeOfDay.hour));
+        static readonly FieldInfo SPAWN_PROBABILITIES = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.SpawnProbabilities)),
+                                  CURRENT_LEVEL = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.currentLevel)),
+                                  CURRENT_HOUR = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.currentHour)),
+                                  TIME_SCRIPT = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.timeScript)),
+                                  HOUR = AccessTools.Field(typeof(TimeOfDay), nameof(TimeOfDay.hour));
         static readonly MethodInfo SPAWN_PROBABILITIES_POST_PROCESS = AccessTools.Method(typeof(Utilities), nameof(Utilities.SpawnProbabilitiesPostProcess));
 
         [HarmonyPatch(typeof(LungProp), nameof(LungProp.DisconnectFromMachinery), MethodType.Enumerator)]
@@ -25,7 +25,7 @@ namespace SpawnCycleFixes
             List<CodeInstruction> codes = instructions.ToList();
 
             MethodInfo spawnEnemyGameObject = AccessTools.Method(typeof(RoundManager), nameof(RoundManager.SpawnEnemyGameObject));
-            for (int i = 2; i < codes.Count; i++)
+            for (int i = 0; i < codes.Count + 2; i++)
             {
                 if (codes[i].opcode == OpCodes.Callvirt && (MethodInfo)codes[i].operand == spawnEnemyGameObject)
                 {
@@ -36,7 +36,7 @@ namespace SpawnCycleFixes
                         new(OpCodes.Call, AccessTools.Method(typeof(Utilities), nameof(Utilities.UpdateEnemySpawnVariables)))
                     ]);
                     Plugin.Logger.LogDebug("Transpiler (Radiation warning): Add Old Bird values after spawning");
-                    //i++;
+                    //i += 3;
                     return codes;
                 }
             }
@@ -226,7 +226,7 @@ namespace SpawnCycleFixes
                     return false;
                 }
 
-                vent = vents[__instance.EnemySpawnRandom.Next(0, vents.Count)];
+                vent = vents[__instance.IndoorEnemySpawnPlacementRandom.Next(0, vents.Count)];
                 Plugin.Logger.LogDebug("Enemy successfully reassigned to another empty vent");
             }
 
@@ -290,7 +290,7 @@ namespace SpawnCycleFixes
                     }
 
                     int time = (int)vent.spawnTime;
-                    EnemyVent vent2 = vents[__instance.EnemySpawnRandom.Next(0, vents.Count)];
+                    EnemyVent vent2 = vents[__instance.IndoorEnemySpawnPlacementRandom.Next(0, vents.Count)];
 
                     __instance.currentEnemyPower += enemy.PowerLevel;
                     __instance.currentEnemyPowerNoDeaths += enemy.PowerLevel;
@@ -418,7 +418,6 @@ namespace SpawnCycleFixes
                     {
                         int randomWeightedIndex = __instance.GetRandomWeightedIndex(__instance.SpawnProbabilities.ToArray(), outsideEnemySpawnRandom);
                         EnemyType enemyType2 = __instance.currentLevel.OutsideEnemies[randomWeightedIndex].enemyType;
-                        // NEW: handle group spawning
                         int spawnInGroupsOf = Mathf.Max(enemyType2.spawnInGroupsOf, 1);
                         for (int num = 0; num < spawnInGroupsOf; num++)
                         {
@@ -481,7 +480,21 @@ namespace SpawnCycleFixes
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> RoundManager_Trans_PlotOutEnemiesForNextHour(IEnumerable<CodeInstruction> instructions)
         {
-            return TransCurrentHour(instructions.ToList(), "Inside spawns");
+            List<CodeInstruction> codes = TransCurrentHour(instructions.ToList(), "Inside spawns").ToList();
+
+            FieldInfo enemySpawnRandom = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.EnemySpawnRandom));
+            MethodInfo count = AccessTools.DeclaredPropertyGetter(typeof(List<EnemyVent>), nameof(List<EnemyVent>.Count));
+            for (int i = 0; i < codes.Count - 2; i++)
+            {
+                if (codes[i].opcode == OpCodes.Ldfld && (FieldInfo)codes[i].operand == enemySpawnRandom && codes[i + 2].opcode == OpCodes.Callvirt && codes[i + 2].operand as MethodInfo == count)
+                {
+                    codes[i].operand = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.IndoorEnemySpawnPlacementRandom));
+                    Plugin.Logger.LogDebug("Transpiler (Inside spawns): Use IndoorEnemySpawnPlacementRandom");
+                    return codes;
+                }
+            }
+
+            return codes;
         }
 
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.SpawnEnemiesOutside))]
