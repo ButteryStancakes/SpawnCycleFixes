@@ -482,13 +482,20 @@ namespace SpawnCycleFixes
         {
             List<CodeInstruction> codes = TransCurrentHour(instructions.ToList(), "Inside spawns").ToList();
 
-            FieldInfo enemySpawnRandom = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.EnemySpawnRandom));
+            FieldInfo enemySpawnRandom = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.EnemySpawnRandom)),
+                      indoorEnemySpawnPlacementRandom = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.IndoorEnemySpawnPlacementRandom));
             MethodInfo count = AccessTools.DeclaredPropertyGetter(typeof(List<EnemyVent>), nameof(List<EnemyVent>.Count));
-            for (int i = 0; i < codes.Count - 2; i++)
+            int converted = 0;
+            for (int i = 0; i < codes.Count - 3; i++)
             {
-                if (codes[i].opcode == OpCodes.Ldfld && (FieldInfo)codes[i].operand == enemySpawnRandom && codes[i + 2].opcode == OpCodes.Callvirt && codes[i + 2].operand as MethodInfo == count)
+                if (codes[i].opcode == OpCodes.Ldfld && (FieldInfo)codes[i].operand == enemySpawnRandom && ((codes[i + 1].opcode == OpCodes.Ldc_R4 && (float)codes[i + 1].operand == 10f && codes[i + 3].opcode == OpCodes.Add) || (codes[i + 2].opcode == OpCodes.Callvirt && codes[i + 2].operand as MethodInfo == count)))
                 {
-                    codes[i].operand = AccessTools.Field(typeof(RoundManager), nameof(RoundManager.IndoorEnemySpawnPlacementRandom));
+                    codes[i].operand = indoorEnemySpawnPlacementRandom;
+                    converted++;
+                }
+
+                if (converted == 2)
+                {
                     Plugin.Logger.LogDebug("Transpiler (Inside spawns): Use IndoorEnemySpawnPlacementRandom");
                     return codes;
                 }
