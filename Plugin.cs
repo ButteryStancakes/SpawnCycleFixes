@@ -15,7 +15,7 @@ namespace SpawnCycleFixes
 
         const string GUID_LOBBY_COMPATIBILITY = "BMX.LobbyCompatibility";
 
-        internal static ConfigEntry<bool> configConsistentSpawnTimes, configLimitOldBirds, configMaskHornetsPower/*, configUpdateFormulas*/;
+        internal static ConfigEntry<bool> configConsistentSpawnTimes, configLimitOldBirds, configMaskHornetsPower/*, configUpdateFormulas*/, configCadaverGrowthsSubtract;
 
         void Awake()
         {
@@ -50,6 +50,12 @@ namespace SpawnCycleFixes
                 "Mask Hornets Power",
                 false,
                 "Mask hornets do not add power level since they spawn in a non-standard way, from killing butlers. Enabling this will fix that.\nIn vanilla, mask hornets and butlers have the same power level (of 2), so enabling this will prevent enemies from spawning to replace dead butlers.");
+
+            configCadaverGrowthsSubtract = Config.Bind(
+                "Enemies",
+                "Cadaver Growths Subtract",
+                true,
+                "When Cadaver Growths are totally exterminated and become unable to grow for the rest of the day, their power level will be subtracted.");
 
             Config.Bind("Miscellaneous", "Limit Spawn Chance", string.Empty, "Legacy setting, doesn't work");
             Config.Remove(Config["Miscellaneous", "Limit Spawn Chance"].Definition);

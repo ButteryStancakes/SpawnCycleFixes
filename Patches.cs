@@ -574,5 +574,16 @@ namespace SpawnCycleFixes
             return false;
         }
         */
+
+        [HarmonyPatch(typeof(CadaverGrowthAI), nameof(CadaverGrowthAI.RemoveWeedFromTile))]
+        [HarmonyPostfix]
+        static void CadaverGrowthAI_Post_RemoveWeedFromTile(CadaverGrowthAI __instance, int tileIndex)
+        {
+            if (__instance.GrowthTiles[tileIndex].eradicated && Plugin.configCadaverGrowthsSubtract.Value && __instance.GrowthTiles.All(growthTile => growthTile.eradicated))
+            {
+                __instance.SubtractFromPowerLevel();
+                Plugin.Logger.LogDebug($"\"{__instance.name}\" {__instance.GetInstanceID()}: All Cadavers have been eradicated, subtracting power level");
+            }
+        }
     }
 }
