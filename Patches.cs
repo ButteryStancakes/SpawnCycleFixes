@@ -48,21 +48,26 @@ namespace SpawnCycleFixes
         static IEnumerable<CodeInstruction> TransSpawnRandomEnemy(List<CodeInstruction> codes, string firstTime, string enemies, string id)
         {
             FieldInfo firstTimeSpawning = AccessTools.Field(typeof(RoundManager), firstTime);
-            for (int i = 2; i < codes.Count; i++)
+            for (int i = 2; i < codes.Count - 1; i++)
             {
-                if (codes[i].opcode == OpCodes.Stfld && (FieldInfo)codes[i].operand == firstTimeSpawning)
+                if (codes[i].opcode == OpCodes.Stfld && (FieldInfo)codes[i].operand == firstTimeSpawning && codes[i + 1].opcode.ToString().ToLower().Contains("ldloc"))
                 {
-                    codes.InsertRange(i - 2, [
-                        new(OpCodes.Ldarg_0),
-                        new(OpCodes.Ldflda, SPAWN_PROBABILITIES),
-                        new(OpCodes.Ldarg_0),
-                        new(OpCodes.Ldfld, CURRENT_LEVEL),
-                        new(OpCodes.Ldfld, AccessTools.Field(typeof(SelectableLevel), enemies)),
-                        new(OpCodes.Call, SPAWN_PROBABILITIES_POST_PROCESS)
-                    ]);
-                    Plugin.Logger.LogDebug($"Transpiler ({id}): Post process probabilities");
-                    //i += 6;
-                    return codes;
+                    CodeInstruction ldloca = Utilities.ConvertLdlocToLdloca(codes[i + 1]);
+                    if (ldloca != null)
+                    {
+                        codes.InsertRange(i - 2, [
+                            new(OpCodes.Ldarg_0),
+                            new(OpCodes.Ldflda, SPAWN_PROBABILITIES),
+                            new(OpCodes.Ldarg_0),
+                            new(OpCodes.Ldfld, CURRENT_LEVEL),
+                            new(OpCodes.Ldfld, AccessTools.Field(typeof(SelectableLevel), enemies)),
+                            ldloca,
+                            new(OpCodes.Call, SPAWN_PROBABILITIES_POST_PROCESS)
+                        ]);
+                        Plugin.Logger.LogDebug($"Transpiler ({id}): Post process probabilities");
+                        //i += 7;
+                        return codes;
+                    }
                 }
             }
 
@@ -582,7 +587,7 @@ namespace SpawnCycleFixes
             if (__instance.GrowthTiles[tileIndex].eradicated && Plugin.configCadaverGrowthsSubtract.Value && __instance.GrowthTiles.All(growthTile => growthTile.eradicated))
             {
                 __instance.SubtractFromPowerLevel();
-                Plugin.Logger.LogDebug($"\"{__instance.name}\" {__instance.GetInstanceID()}: All Cadavers have been eradicated, subtracting power level");
+                Plugin.Logger.LogDebug($"\"{__instance.name}\" #{__instance.GetInstanceID()}: All Cadavers have been eradicated, subtracting power level");
             }
         }
     }
